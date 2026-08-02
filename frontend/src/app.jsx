@@ -30,7 +30,7 @@ const App = () => {
 
         try {
             // নিচে আপনার লাইভ ব্যাকএন্ডের লিংক দিতে হবে (লোকালে টেস্ট করলে localhost ঠিক আছে)
-            const response = await fetch("http://localhost:5000/api/check-image", {
+            const response = await fetch("https://deepfake-lumd.onrender.com/api/check-image", {
                 method: "POST",
                 body: formData,
             });
