@@ -1,26 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import Layout from './components/Layout';
 import './styles/global.css';
 
 const App = () => {
-    const [status, setStatus] = useState('Connecting...');
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
-    const [result, setResult] = useState("");
+    const [result, setResult] = useState(null);
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        fetch("https://deepfake-lumd.onrender.com")
-            .then(res => setStatus('Online & Ready 🚀'))
-            .catch(err => setStatus('Connected'));
-    }, []);
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         setFile(selectedFile);
         if (selectedFile) {
             setPreview(URL.createObjectURL(selectedFile));
+            setResult(null);
         }
     };
 
@@ -30,7 +24,7 @@ const App = () => {
             return;
         }
         setLoading(true);
-        setResult("এআই (AI) ছবি গভীরভাবে স্ক্যান করছে, দয়া করে কয়েক সেকেন্ড অপেক্ষা করুন...");
+        setResult(null);
         
         const formData = new FormData();
         formData.append("image", file);
@@ -43,12 +37,16 @@ const App = () => {
             const data = await response.json();
             
             if (data.success) {
-                setResult(data.explanation);
+                // টেক্সটকে পয়েন্ট আকারে ভাগ করার লজিক
+                const points = data.explanation
+                    .split('.')
+                    .filter(point => point.trim().length > 0);
+                setResult(points);
             } else {
-                setResult("সমস্যা হয়েছে: " + data.message);
+                setResult(["সমস্যা হয়েছে: " + data.message]);
             }
         } catch (error) {
-            setResult("সার্ভারের সাথে কানেক্ট করা যাচ্ছে না!");
+            setResult(["সার্ভারের সাথে কানেক্ট করা যাচ্ছে না!"]);
             console.error(error);
         }
         setLoading(false);
@@ -56,14 +54,11 @@ const App = () => {
 
     return (
         <Layout>
-            <div style={{ maxWidth: "700px", margin: "0 auto", fontFamily: "Segoe UI, sans-serif", padding: "20px" }}>
+            <div style={{ maxWidth: "700px", margin: "20px auto", fontFamily: "Segoe UI, sans-serif", padding: "20px" }}>
                 
                 {/* হেডার সেকশন */}
                 <div style={{ textAlign: "center", marginBottom: "30px" }}>
                     <h1 style={{ color: "#1E293B", fontSize: "2.2rem", marginBottom: "10px" }}>🛡️ DeepFake Detection System</h1>
-                    <p style={{ color: "#64748B", fontSize: "1rem" }}>
-                        System Status: <strong style={{ color: "#10B981" }}>{status}</strong>
-                    </p>
                 </div>
 
                 {/* মেইন কার্ড */}
@@ -136,19 +131,22 @@ const App = () => {
                         {loading ? "Analyzing Image..." : "🔍 Check Real or Fake"}
                     </button>
 
-                    {/* রেজাল্ট বক্স */}
+                    {/* পয়েন্ট আকারে রেজাল্ট প্রদর্শন */}
                     {result && (
                         <div style={{ 
                             marginTop: "25px", 
-                            whiteSpace: "pre-wrap", 
                             textAlign: "left", 
-                            padding: "15px 20px", 
+                            padding: "20px", 
                             background: "#F1F5F9", 
                             borderRadius: "10px",
                             borderLeft: "5px solid #2563EB"
                         }}>
                             <strong style={{ color: "#1E293B", fontSize: "1.1rem" }}>📋 Analysis Result:</strong> 
-                            <p style={{ marginTop: "8px", color: "#334155", lineHeight: "1.6" }}>{result}</p>
+                            <ul style={{ marginTop: "10px", paddingLeft: "20px", color: "#334155", lineHeight: "1.7" }}>
+                                {result.map((item, index) => (
+                                    <li key={index} style={{ marginBottom: "8px" }}>{item.trim()}</li>
+                                ))}
+                            </ul>
                         </div>
                     )}
                 </div>
