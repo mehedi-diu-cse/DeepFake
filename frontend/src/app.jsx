@@ -10,10 +10,9 @@ const App = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        // Test connection to our backend
-        fetch(`${import.meta.env.VITE_API_URL}/health`)
-            .then(res => res.json())
-            .then(data => setStatus(data.message))
+        // সরাসরি Render-এর লাইভ সার্ভার চেক করা হচ্ছে
+        fetch("https://deepfake-lumd.onrender.com")
+            .then(res => setStatus('Backend is Connected & Live! 🎉'))
             .catch(err => setStatus('Backend disconnected.'));
     }, []);
 
@@ -29,7 +28,6 @@ const App = () => {
         formData.append("image", file);
 
         try {
-            // নিচে আপনার লাইভ ব্যাকএন্ডের লিংক দিতে হবে (লোকালে টেস্ট করলে localhost ঠিক আছে)
             const response = await fetch("https://deepfake-lumd.onrender.com/api/check-image", {
                 method: "POST",
                 body: formData,
@@ -51,7 +49,7 @@ const App = () => {
     return (
         <Layout>
             <h1>Welcome to the Frontend</h1>
-            <p>Backend Status: <strong>{status}</strong></p>
+            <p>Backend Status: <strong style={{color: "green"}}>{status}</strong></p>
 
             <div style={{ textAlign: "center", margin: "20px", padding: "20px", border: "1px solid gray", borderRadius: "10px" }}>
                 <h2>DeepFake Image Checker</h2>
