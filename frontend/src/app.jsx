@@ -37,7 +37,6 @@ const App = () => {
             const data = await response.json();
             
             if (data.success) {
-                // টেক্সটকে পয়েন্ট আকারে ভাগ করার লজিক
                 const points = data.explanation
                     .split('.')
                     .filter(point => point.trim().length > 0);
@@ -54,11 +53,11 @@ const App = () => {
 
     return (
         <Layout>
-            <div style={{ maxWidth: "700px", margin: "20px auto", fontFamily: "Segoe UI, sans-serif", padding: "20px" }}>
+            <div style={{ maxWidth: "700px", margin: "10px auto", fontFamily: "Segoe UI, sans-serif", padding: "20px" }}>
                 
-                {/* হেডার সেকশন */}
-                <div style={{ textAlign: "center", marginBottom: "30px" }}>
-                    <h1 style={{ color: "#1E293B", fontSize: "2.2rem", marginBottom: "10px" }}>🛡️ DeepFake Detection System</h1>
+                {/* মেইন হেডার */}
+                <div style={{ textAlign: "center", marginBottom: "25px" }}>
+                    <h1 style={{ color: "#1E293B", fontSize: "2.2rem", margin: "0" }}>🛡️ DeepFake Detection System</h1>
                 </div>
 
                 {/* মেইন কার্ড */}
@@ -144,7 +143,7 @@ const App = () => {
                             <strong style={{ color: "#1E293B", fontSize: "1.1rem" }}>📋 Analysis Result:</strong> 
                             <ul style={{ marginTop: "10px", paddingLeft: "20px", color: "#334155", lineHeight: "1.7" }}>
                                 {result.map((item, index) => (
-                                    <li key={index} style={{ marginBottom: "8px" }}>{item.trim()}</li>
+                                    <li key={index} style={{ marginBottom: "8px" }}>{item.replace(/\*\*/g, '').trim()}</li>
                                 ))}
                             </ul>
                         </div>
