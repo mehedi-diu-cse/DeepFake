@@ -23,7 +23,6 @@ const upload = multer({ storage: storage });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ছবি চেকের রুট (apiRoutes-এর উপরে রাখা হলো যাতে কোনো কনফ্লিক্ট না হয়)
 app.post('/api/check-image', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
@@ -31,8 +30,6 @@ app.post('/api/check-image', upload.single('image'), async (req, res) => {
         }
 
         const imageBase64 = req.file.buffer.toString("base64");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-        
         const prompt = "Analyze this image and tell me if it is a real photograph or AI-generated/Fake. Describe exactly why you think it is fake or real based on details like lighting, artifacts, blurring, or noise.";
         
         const imagePart = {
@@ -42,18 +39,44 @@ app.post('/api/check-image', upload.single('image'), async (req, res) => {
             }
         };
 
-        const result = await model.generateContent([prompt, imagePart]);
-        const answer = result.response.text();
+        // 🚀 স্মার্ট ফলব্যাক সিস্টেম: সম্ভাব্য সবগুলো মডেলের লিস্ট
+        const possibleModels = [
+            "gemini-1.5-flash", 
+            "gemini-1.5-pro", 
+            "gemini-1.0-pro-vision-latest", 
+            "gemini-pro-vision"
+        ];
+        
+        let answer = null;
+        let finalError = null;
 
-        res.json({ success: true, explanation: answer });
+        // সার্ভার একা একাই সবগুলো মডেল চেক করবে
+        for (let modelName of possibleModels) {
+            try {
+                const model = genAI.getGenerativeModel({ model: modelName });
+                const result = await model.generateContent([prompt, imagePart]);
+                answer = result.response.text();
+                console.log(`Successfully generated with model: ${modelName}`);
+                break; // কোনো একটি মডেল সফল হলেই লুপ বন্ধ হয়ে যাবে!
+            } catch (err) {
+                console.error(`Model ${modelName} failed: ${err.message}`);
+                finalError = err;
+            }
+        }
+
+        if (answer) {
+            res.json({ success: true, explanation: answer });
+        } else {
+            // যদি দুর্ভাগ্যবশত কোনো মডেলই কাজ না করে
+            res.status(500).json({ 
+                success: false, 
+                message: `Google AI Error: ${finalError?.message || 'All models failed.'}` 
+            });
+        }
 
     } catch (error) {
-        console.error("AI Error:", error);
-        // ফিক্স: গুগল এআই-এর আসল এরর মেসেজটি সরাসরি ফ্রন্টএন্ডে (ওয়েবসাইটে) পাঠানো হচ্ছে
-        res.status(500).json({ 
-            success: false, 
-            message: `Google AI Error: ${error.message || 'Unknown Error'}` 
-        });
+        console.error("Server Error:", error);
+        res.status(500).json({ success: false, message: `Server Error: ${error.message}` });
     }
 });
 
