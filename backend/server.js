@@ -31,7 +31,7 @@ app.post('/api/check-image', upload.single('image'), async (req, res) => {
         }
 
         const imageBase64 = req.file.buffer.toString("base64");
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
         
         const prompt = "Analyze this image and tell me if it is a real photograph or AI-generated/Fake. Describe exactly why you think it is fake or real based on details like lighting, artifacts, blurring, or noise.";
         
