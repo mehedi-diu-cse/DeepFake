@@ -26,57 +26,39 @@ app.post('/api/check-image', upload.single('image'), async (req, res) => {
         }
 
         const apiKey = process.env.GEMINI_API_KEY;
-        
-        // 🚀 ১. অটো-ডিটেক্ট: গুগলের কাছে সরাসরি জানতে চাওয়া হচ্ছে কোন মডেল এভেইলেবল আছে
-        const modelsRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-        const modelsData = await modelsRes.json();
-        
-        if (!modelsData.models) {
-            return res.status(500).json({ success: false, message: "API Key কাজ করছে না অথবা গুগলের সার্ভার ডাউন!" });
+        if (!apiKey) {
+            return res.status(500).json({ success: false, message: "Render সার্ভারে API Key পাওয়া যাচ্ছে না!" });
         }
 
-        // যে মডেলটি ছবি সাপোর্ট করে সেটি অটোমেটিকভাবে খুঁজে বের করা
-        const validModel = modelsData.models.find(m => 
-            m.name.includes("gemini") && 
-            m.supportedGenerationMethods.includes("generateContent")
-        );
-
-        if (!validModel) {
-            return res.status(500).json({ success: false, message: "আপনার API Key-তে কোনো জেমিনি মডেলের অ্যাক্সেস নেই!" });
-        }
-
-        const modelName = validModel.name; // কোড নিজে থেকেই সঠিক নাম বসিয়ে নেবে
-        console.log("Auto-selected model:", modelName);
-
-        // 🚀 ২. সরাসরি API কল (প্যাকেজ বাদে, যাতে কোনো ভার্সন সমস্যা না হয়)
         const imageBase64 = req.file.buffer.toString("base64");
         const prompt = "Analyze this image and tell me if it is a real photograph or AI-generated/Fake. Describe exactly why you think it is fake or real based on details like lighting, artifacts, blurring, or noise.";
 
-        const generateRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`, {
+        // 🚀 সরাসরি Google-এর মেইন API-তে রিকোয়েস্ট (সব প্যাকেজের ঝামেলা মুক্ত)
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [{
                     parts: [
                         { text: prompt },
-                        {
-                            inline_data: {
-                                mime_type: req.file.mimetype,
-                                data: imageBase64
-                            }
-                        }
+                        { inline_data: { mime_type: req.file.mimetype, data: imageBase64 } }
                     ]
                 }]
             })
         });
 
-        const generateData = await generateRes.json();
+        const data = await response.json();
 
-        if (generateData.error) {
-            return res.status(500).json({ success: false, message: `Google API Error: ${generateData.error.message}` });
+        // গুগল কোনো এরর দিলে সরাসরি ওয়েবসাইটে দেখাবে
+        if (!response.ok) {
+            return res.status(500).json({ 
+                success: false, 
+                message: `Google API Error: ${data.error?.message || 'Unknown Error'}` 
+            });
         }
 
-        const answer = generateData.candidates[0].content.parts[0].text;
+        // সফল হলে রেজাল্ট পাঠানো
+        const answer = data.candidates[0].content.parts[0].text;
         res.json({ success: true, explanation: answer });
 
     } catch (error) {
